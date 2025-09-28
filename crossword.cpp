@@ -51,27 +51,39 @@ void Crossword::CreateField() {
   }
 }
 
-void Crossword::HCalc(unsigned int i) {
+void Crossword::HCalc(unsigned int i, unsigned int optimize) {
   std::vector<Field*> line;
   for (unsigned int j = 0; j < h_size_; ++j) {
       line.push_back(line_[i * h_size_ + j]);
     }
   Finder finder(line, v_chains_[i]);
-  finder.FindResult();
+  switch (optimize)
+  {
+  case 5:
+    finder.FastFind();
+    break;
+  default:
+    finder.FindResult();
+    break;
+  }
   finder.GetResult();
 }
 
-void Crossword::VCalc(unsigned int i) {
+void Crossword::VCalc(unsigned int i, unsigned int optimize) {
   std::vector<Field*> line;
-  std::vector<unsigned int > values;
-  for(auto chain : h_chains_[i]) {
-    values.push_back(chain->text().toInt());
-  }
   for (unsigned int j = 0; j < v_size_; ++j) {
     line.push_back(line_[i + j * h_size_]);
   }
   Finder finder(line, h_chains_[i]);
-  finder.FindResult();
+  switch (optimize)
+  {
+  case 5:
+    finder.FastFind();
+    break;
+  default:
+    finder.FindResult();
+    break;
+  }
   finder.GetResult();
 }
 
@@ -137,7 +149,13 @@ void Crossword::Load() {
 }
 
 void Crossword::Run() {
-  for (int k = 0; k < 4; ++k) {
+   for (unsigned i = 0; i < v_size_; ++i) {
+     HCalc(i, 5);
+   }
+  for (unsigned i = 0; i < h_size_; ++i) {
+    VCalc(i, 5);
+  }
+  for (int k = 0; k < 3; ++k) {
     for (unsigned i = 0; i < v_size_; ++i) {
       HCalc(i);
     }

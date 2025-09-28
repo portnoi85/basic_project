@@ -1,11 +1,10 @@
 #include "finder.h"
 #include <QMessageBox>
-
+#include <QCoreApplication>
 Finder::Finder(const std::vector<Field*> &line, const std::vector<Chain*> &chains)
   : source_line_{line},
     chains_{chains} {
   size_t size = line.size();
-  result_line_.resize(size, 0);
   filled_line_.resize(size, 1);
   empty_line_.resize(size, -1);
 }
@@ -25,6 +24,7 @@ int Finder::GetResult() {
       source_line_[i]->setText("");
     }
   }
+  QCoreApplication::processEvents();
   return 0;
 }
 
@@ -56,6 +56,38 @@ int Finder::FindResult() {
   }
   return 0;
 }
+
+int Finder::FastFind() {
+  int res = 0;
+  unsigned int curent_pos = 0;
+  unsigned int size = chains_.size();
+  int diff = 0;
+  for (unsigned int i = 0; i< source_line_.size(); ++i) {
+    if (source_line_[i]->state_ >= -1) {
+      empty_line_[i] = 0;
+    }
+    if (source_line_[i]->state_ <= 0) {
+      filled_line_[i] = 0;
+    }
+  }
+  if (size == 0) return 0;
+  unsigned int min_len = chains_[0]->size_;
+  for (unsigned int i = 1; i < size; ++i) {
+    min_len += chains_[i]->size_;
+    min_len += 1;//закладка на цветной вариант.
+  }
+  diff = source_line_.size() - min_len;
+  for (unsigned int i = 0; i < size; ++i) {
+    for (int j = 0; j < int(chains_[i]->size_) - diff; ++j) {
+      res = 1;
+      filled_line_[curent_pos + diff + j] = 1;
+    };
+    curent_pos += chains_[i]->size_;
+    curent_pos += 1;
+  }
+  return res;
+}
+
 
 int Finder::CheckChain(unsigned int pos, unsigned int chain_num) {
   unsigned int i = 0;
@@ -120,7 +152,6 @@ int Finder::SaveChains() {
   size_t size = source_line_.size();
   std::vector<int> current_filled_;
   current_filled_.resize(size, 0);
-  QString str;
   for (Chain* chain : chains_) {
     for (unsigned int i = 0; i < chain->size_; ++i) {
       current_filled_[chain->position_ + i] = 1;
@@ -129,7 +160,6 @@ int Finder::SaveChains() {
   }
   for (unsigned int i = 0; i < size; ++i) {
     filled_line_[i] = filled_line_[i] && current_filled_[i];
-    str +=" "+ QString::number(current_filled_[i]);
   }
   return 0;
 }
@@ -137,7 +167,6 @@ int Finder::SaveChains() {
 void Finder::Clear() {
   //chains_.clear();
   //source_line_.clear();
-  result_line_.clear();
   filled_line_.clear();
   empty_line_.clear();
 }
