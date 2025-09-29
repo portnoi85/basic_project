@@ -18,8 +18,9 @@ class Crossword : public QWidget
   void SetSize(unsigned int h_size, unsigned int v_size);
   void Clear();
   void CreateField();
-  void VCalc(unsigned int row, unsigned int optimize = 0);
-  void HCalc(unsigned int col, unsigned int optimize= 0);
+  int VCalc(unsigned int row, unsigned int optimize = 0);
+  int HCalc(unsigned int col, unsigned int optimize= 0);
+  bool Check(const std::vector<Field*> &line);
  public slots:
   void Load();
   void Run();

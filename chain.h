@@ -11,8 +11,8 @@ class Chain : public QPushButton {
   unsigned int size_;
   unsigned int position_;
   //для дальнейшей оптимизации:
-  //unsigned int min_pos_;
-  //unsigned int max_pos_;
+  unsigned int min_pos_;
+  unsigned int max_pos_;
   //unsigned int color_;
   
  private:

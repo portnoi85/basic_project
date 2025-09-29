@@ -9,6 +9,7 @@ class Field : public QPushButton {
   Field(QWidget *parent = nullptr);
   ~Field();
   int state_{0};
+  bool checked_{false};
   unsigned int color_;
 
  private:

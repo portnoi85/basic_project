@@ -1,6 +1,7 @@
 #include "crossword.h"
 #include <fstream>
 #include <QFileDialog>
+#include <iostream>
 
 Crossword::Crossword(QWidget *parent)
 	: QWidget(parent) {
@@ -51,11 +52,15 @@ void Crossword::CreateField() {
   }
 }
 
-void Crossword::HCalc(unsigned int i, unsigned int optimize) {
+int  Crossword::HCalc(unsigned int i, unsigned int optimize) {
   std::vector<Field*> line;
   for (unsigned int j = 0; j < h_size_; ++j) {
       line.push_back(line_[i * h_size_ + j]);
     }
+  if (Check(line)) {
+    return 0;
+  }
+  std::cout << "H" << i << std::endl;
   Finder finder(line, v_chains_[i]);
   switch (optimize)
   {
@@ -66,14 +71,18 @@ void Crossword::HCalc(unsigned int i, unsigned int optimize) {
     finder.FindResult();
     break;
   }
-  finder.GetResult();
+  return finder.GetResult();
 }
 
-void Crossword::VCalc(unsigned int i, unsigned int optimize) {
+int Crossword::VCalc(unsigned int i, unsigned int optimize) {
   std::vector<Field*> line;
   for (unsigned int j = 0; j < v_size_; ++j) {
     line.push_back(line_[i + j * h_size_]);
   }
+  if (Check(line)) {
+    return 0;
+  }
+  std::cout << "V" << i << std::endl;
   Finder finder(line, h_chains_[i]);
   switch (optimize)
   {
@@ -84,7 +93,7 @@ void Crossword::VCalc(unsigned int i, unsigned int optimize) {
     finder.FindResult();
     break;
   }
-  finder.GetResult();
+  return finder.GetResult();
 }
 
 void ClearLayout(QLayout * layout) {
@@ -114,6 +123,7 @@ void Crossword::Load() {
   stream >> color_size >> rc >> gc >> bc;
   h_chains_.clear();
   ClearLayout(top_values_);
+  setVisible(false);
   for (int i = 0; i < h_size; ++i) {
     std::vector<Chain*> chains;
     int chain_size = 0;
@@ -121,9 +131,11 @@ void Crossword::Load() {
     line->addStretch(1);
     stream >> chain_size;
     while (chain_size) {
-      Chain *b1 = new Chain(chain_size);
-      chains.push_back(b1);
-      line->addWidget(b1);
+      Chain *chain = new Chain(chain_size);
+      chain->min_pos_ = 0;
+      chain->max_pos_ = v_size -1; 
+      chains.push_back(chain);
+      line->addWidget(chain);
       stream >> chain_size;
     }
     h_chains_.push_back(std::move(chains));
@@ -138,29 +150,55 @@ void Crossword::Load() {
     line->addStretch(1);
     stream >> chain_size;
     while (chain_size) {
-      Chain *b1 = new Chain(chain_size);
-      chains.push_back(b1);
-      line->addWidget(b1);
+      Chain *chain = new Chain(chain_size);
+      chain->min_pos_ = 0;
+      chain->max_pos_ = h_size -1; 
+      chains.push_back(chain);
+      line->addWidget(chain);
       stream >> chain_size;
     }
     v_chains_.push_back(std::move(chains));
     left_values_->addLayout(line);
   }
+  setVisible(true);
+}
+
+bool Crossword::Check(const std::vector<Field*> &line) {
+  for (auto field : line) {
+    if (field->checked_ == false) {
+      return false;
+    }
+  }
+  return true;
 }
 
 void Crossword::Run() {
-   for (unsigned i = 0; i < v_size_; ++i) {
-     HCalc(i, 5);
-   }
+  for (unsigned i = 0; i < v_size_; ++i) {
+    HCalc(i, 5);
+  }
   for (unsigned i = 0; i < h_size_; ++i) {
     VCalc(i, 5);
   }
-  for (int k = 0; k < 3; ++k) {
+  bool next = true;
+  while (next) {
+    next = false;
     for (unsigned i = 0; i < v_size_; ++i) {
-      HCalc(i);
+      switch (HCalc(i)) {
+        case -1:
+          return;
+        case 1:
+          next = true;
+          break;
+      }
     }
     for (unsigned i = 0; i < h_size_; ++i) {
-      VCalc(i);
+      switch (VCalc(i)) {
+        case -1:
+          return;
+        case 1:
+          next = true;
+          break;
+      }
     }
   }
 }

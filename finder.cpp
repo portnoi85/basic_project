@@ -10,22 +10,30 @@ Finder::Finder(const std::vector<Field*> &line, const std::vector<Chain*> &chain
 }
 
 int Finder::GetResult() {
+  int res = 0;
   unsigned int size = source_line_.size();
   for (unsigned int i = 0; i < size; ++i) {
-    //проверить случай, если оба условия сработали?..
-    if (empty_line_[i] == -1) {
+    if (empty_line_[i] == -1 && filled_line_[i] == 1) {
+      return -1;
+    }
+  }
+  for (unsigned int i = 0; i < size; ++i) {
+    if (empty_line_[i] == -1 && source_line_[i]->state_ != -1) {
       source_line_[i]->state_ = -1;
       source_line_[i]->setText("x");
-    } else if (filled_line_[i] == 1) {
+      res = 1;
+      source_line_[i]->checked_ = false;
+    } else if (filled_line_[i] == 1 && source_line_[i]->state_ != 1) {
       source_line_[i]->state_ = 1;
       source_line_[i]->setText("█");
+      res = 1;
+      source_line_[i]->checked_ = false;
     } else {
-      source_line_[i]->state_ = 0;
-      source_line_[i]->setText("");
+      source_line_[i]->checked_ = true;
     }
   }
   QCoreApplication::processEvents();
-  return 0;
+  return res;
 }
 
 int Finder::FindResult() {
@@ -93,17 +101,20 @@ int Finder::CheckChain(unsigned int pos, unsigned int chain_num) {
   unsigned int i = 0;
   unsigned int size = source_line_.size();
   unsigned int len = chains_[chain_num]->size_;
-  if ((pos >= size) || (pos > 0 && source_line_[pos - 1]->state_ == 1)) {
+  if ((pos > chains_[chain_num]->max_pos_) || (pos > 0 && source_line_[pos - 1]->state_ == 1)) {
     return -1;
   }
   // если цеопчка последняя, найти самую дальнюю закрашенную ячейку
   if (chain_num == chains_.size() - 1) {
     i = size - 1;
     while (i >= pos + len) {
-      if (source_line_[i]->state_ == 1) {
+      if (source_line_[i]->state_ > 0) {
         break;
       }
       i--;
+    }
+    if (i > chains_[chain_num]->max_pos_) {
+      return -1;
     }
     //не должно быть закрашенных клеток дальше последней цепочки.
     while (pos + len <= i) {
@@ -116,7 +127,7 @@ int Finder::CheckChain(unsigned int pos, unsigned int chain_num) {
   }
   i = 0;
   while (i < len) {
-    if (pos + len > size) {
+    if (pos + len > chains_[chain_num]->max_pos_ + 1) {
       return -1;
     }
     //клетка не определена или нужного цвета
@@ -139,8 +150,11 @@ int Finder::CheckChain(unsigned int pos, unsigned int chain_num) {
     }
     return -1;
   }
-  while (pos + i < size && source_line_[pos + i]->state_ == 1) {
+  while (pos + len < size && source_line_[pos + len]->state_ == 1) {
     if (source_line_[pos]->state_ == 1) {
+      return -1;
+    }
+    if (pos + len >= chains_[chain_num]->max_pos_) {
       return -1;
     }
     ++pos;
