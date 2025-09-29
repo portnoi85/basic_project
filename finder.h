@@ -10,7 +10,7 @@ class Finder {
  public:
   Finder(const std::vector<Field*> &line, const std::vector<Chain*> &chains);
   int GetResult();
-  int FindResult();
+  int FindResult(bool all = true);
   int FastFind();
   void Clear();
  private:

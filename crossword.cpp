@@ -1,7 +1,6 @@
 #include "crossword.h"
 #include <fstream>
 #include <QFileDialog>
-#include <iostream>
 
 Crossword::Crossword(QWidget *parent)
 	: QWidget(parent) {
@@ -9,6 +8,10 @@ Crossword::Crossword(QWidget *parent)
   fields_ = new QGridLayout();
   left_values_ = new QVBoxLayout();
   top_values_ = new QHBoxLayout();
+  grid_->setSpacing(1);
+  fields_->setSpacing(1);
+  left_values_->setSpacing(1);
+  top_values_->setSpacing(1);
   QHBoxLayout *lower_layout = new QHBoxLayout();
   QPushButton *b_load = new QPushButton("Загрузить");
   QPushButton *b_run = new QPushButton("Решить");
@@ -60,7 +63,6 @@ int  Crossword::HCalc(unsigned int i, unsigned int optimize) {
   if (Check(line)) {
     return 0;
   }
-  std::cout << "H" << i << std::endl;
   Finder finder(line, v_chains_[i]);
   switch (optimize)
   {
@@ -82,7 +84,6 @@ int Crossword::VCalc(unsigned int i, unsigned int optimize) {
   if (Check(line)) {
     return 0;
   }
-  std::cout << "V" << i << std::endl;
   Finder finder(line, h_chains_[i]);
   switch (optimize)
   {
@@ -132,8 +133,7 @@ void Crossword::Load() {
     stream >> chain_size;
     while (chain_size) {
       Chain *chain = new Chain(chain_size);
-      chain->min_pos_ = 0;
-      chain->max_pos_ = v_size -1; 
+      chain->max_pos_ = v_size - chain_size; 
       chains.push_back(chain);
       line->addWidget(chain);
       stream >> chain_size;
@@ -151,8 +151,7 @@ void Crossword::Load() {
     stream >> chain_size;
     while (chain_size) {
       Chain *chain = new Chain(chain_size);
-      chain->min_pos_ = 0;
-      chain->max_pos_ = h_size -1; 
+      chain->max_pos_ = h_size - chain_size; 
       chains.push_back(chain);
       line->addWidget(chain);
       stream >> chain_size;
