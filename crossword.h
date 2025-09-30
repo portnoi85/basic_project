@@ -15,24 +15,24 @@ class Crossword : public QWidget
  public:
   Crossword(QWidget *parent = nullptr);
   ~Crossword();
-  void SetSize(unsigned int h_size, unsigned int v_size);
-  void Clear();
-  void CreateField();
-  int VCalc(unsigned int row, unsigned int optimize = 0);
-  int HCalc(unsigned int col, unsigned int optimize= 0);
-  bool Check(const std::vector<Field*> &line);
  public slots:
   void Load();
   void Run();
  private:
-  std::vector<Field*> line_;
+  void ResizeFields(unsigned int h_size, unsigned int v_size);
+  unsigned int LoadTopChains(std::ifstream &stream);
+  unsigned int LoadLeftChains(std::ifstream &stream);
+  int VCalc(unsigned int row, unsigned int optimize = 0);
+  int HCalc(unsigned int col, unsigned int optimize= 0);
+  bool CheckLine(const std::vector<Field*> &line);
+  bool CheckChains(const std::vector<std::vector<Chain*>> &v_chains);
   unsigned int h_size_;
   unsigned int v_size_;
-  std::vector<std::vector<Chain*>> h_chains_;
-  std::vector<std::vector<Chain*>> v_chains_;
-  QGridLayout *grid_;
-  QGridLayout *fields_;
-  QVBoxLayout *left_values_;
-  QHBoxLayout *top_values_;
+  std::vector<Field*> fields_;
+  std::vector<std::vector<Chain*>> top_chains_;
+  std::vector<std::vector<Chain*>> left_chains_;
+  QGridLayout *fields_layout_;
+  QHBoxLayout *top_chains_layout_;
+  QVBoxLayout *left_chains_layout_;
 };
 #endif // CROSSWORD_H

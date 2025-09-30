@@ -10,7 +10,8 @@ class Field : public QPushButton {
   ~Field();
   int state_{0};
   bool checked_{false};
-  unsigned int color_;
+  //для дальнейшей оптимизации:
+  // unsigned int color_;
 
  private:
  

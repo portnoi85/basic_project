@@ -8,12 +8,12 @@ class Chain : public QPushButton {
  public:
   Chain(int len, QWidget *parent = nullptr);
   ~Chain();
-  unsigned int size_;
-  unsigned int position_;
+  unsigned int len_;
+  unsigned int pos_{0};
   unsigned int min_pos_{0};
   unsigned int max_pos_{0};
-  unsigned int find_min_pos_{0};
-  unsigned int find_max_pos_{0};
+  unsigned int tmp_min_pos_{0};
+  unsigned int tmp_max_pos_{0};
 
   //для дальнейшей оптимизации:
   //unsigned int color_;

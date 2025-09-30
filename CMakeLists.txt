@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(JSFind VERSION 0.1 LANGUAGES CXX)
+project(JCFind VERSION 0.1 LANGUAGES CXX)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
@@ -26,14 +26,14 @@ set(PROJECT_SOURCES
         finder.h
 )
 
-add_executable(JSFind
+add_executable(JCFind
     ${PROJECT_SOURCES}
 )
 
 if (MSVC)
-    target_compile_options(JSFind PUBLIC /W4)
+    target_compile_options(JCFind PUBLIC /W4)
 else ()
-    target_compile_options(JSFind PUBLIC -Wall -Wextra -Wpedantic)
+    target_compile_options(JCFind PUBLIC -Wall -Wextra -Wpedantic)
 endif ()
 
-target_link_libraries(JSFind PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
+target_link_libraries(JCFind PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
