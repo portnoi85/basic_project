@@ -2,14 +2,13 @@
 #define FINDER_H
 
 #include <vector>
-#include <QMessageBox>
-#include "chain.h"
-#include "field.h"
+
+#include "chain_val.h"
 
 class Finder {
  public:
-  Finder(const std::vector<Field*> &line, const std::vector<Chain*> &chains);
-  int GetResult();
+  Finder(const std::vector<int> &line, const std::vector<ChainVal*> &chains);
+  std::vector<int> GetResult();
   void FindResult(bool all = true);
   int FastFind();
   void Clear();
@@ -19,8 +18,8 @@ class Finder {
   bool CheckLastPos(unsigned int &pos);
   bool CheckLastFill(unsigned int &pos, unsigned int chain_num);
   int SaveChains();
-  const std::vector<Field*> &source_line_;
-  const std::vector<Chain*> &chains_;
+  const std::vector<int> &source_line_;
+  const std::vector<ChainVal*> &chains_;
   std::vector<int> filled_line_;
   std::vector<int> empty_line_;
   unsigned int curent_pos{0};

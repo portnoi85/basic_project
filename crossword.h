@@ -1,8 +1,6 @@
 #ifndef CROSSWORD_H
 #define CROSSWORD_H
 
-#include <QWidget>
-#include <QPushButton>
 #include <QLayout>
 
 #include "chain.h"
@@ -24,7 +22,7 @@ class Crossword : public QWidget
   unsigned int LoadLeftChains(std::ifstream &stream);
   int VCalc(unsigned int row, unsigned int optimize = 0);
   int HCalc(unsigned int col, unsigned int optimize= 0);
-  bool CheckLine(const std::vector<Field*> &line);
+  bool CheckLine(unsigned int i, bool orientation);
   bool CheckChains(const std::vector<std::vector<Chain*>> &v_chains);
   unsigned int h_size_;
   unsigned int v_size_;

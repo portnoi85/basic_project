@@ -1,6 +1,10 @@
-#include "crossword.h"
 #include <fstream>
+
 #include <QFileDialog>
+#include <QMessageBox>
+#include <QPushButton>
+
+#include "crossword.h"
 
 Crossword::Crossword(QWidget *parent)
 	: QWidget(parent) {
@@ -47,14 +51,20 @@ void Crossword::ResizeFields(unsigned int h_size, unsigned int v_size) {
 }
 
 int  Crossword::HCalc(unsigned int i, unsigned int optimize) {
-  std::vector<Field*> line;
-  for (unsigned int j = 0; j < h_size_; ++j) {
-    line.push_back(fields_[i * h_size_ + j]);
-  }
-  if (CheckLine(line)) {
+  std::vector<int> line;
+  if (CheckLine(i, false)) {
     return 0;
   }
-  Finder finder(line, left_chains_[i]);
+  line.reserve(h_size_);
+  for (unsigned int j = 0; j < h_size_; ++j) {
+    line.push_back(fields_[i * h_size_ + j]->state_);
+  }
+  std::vector<ChainVal*> val;
+  val.reserve(left_chains_.size());
+  for (auto chain : left_chains_[i]) {
+    val.push_back(&chain->val_);
+  }
+  Finder finder(line, val);
   switch (optimize) {
     case 5:
       finder.FastFind();
@@ -63,18 +73,37 @@ int  Crossword::HCalc(unsigned int i, unsigned int optimize) {
       finder.FindResult();
       break;
   }
-  return finder.GetResult();
+  line = finder.GetResult();
+  if (line.size() == 0) {
+    throw std::string("нет решений для строки ") + std::to_string(i);
+  }
+  for (auto chain : left_chains_[i]) {
+    if (chain->val_.max_pos == chain->val_.min_pos) {
+      chain->setStyleSheet("background-color: #AAFFAA; color: black;");
+    }
+  }
+  bool res = true;
+  for (unsigned int j = 0; j < h_size_; ++j) {
+    res = fields_[i * h_size_ + j]->SetVal(line[j]) && res;
+  }
+  return !res;
 }
 
 int Crossword::VCalc(unsigned int i, unsigned int optimize) {
-  std::vector<Field*> line;
-  for (unsigned int j = 0; j < v_size_; ++j) {
-    line.push_back(fields_[i + j * h_size_]);
-  }
-  if (CheckLine(line)) {
+  std::vector<int> line;
+  if (CheckLine(i, true)) {
     return 0;
   }
-  Finder finder(line, top_chains_[i]);
+  line.reserve(v_size_);
+  for (unsigned int j = 0; j < v_size_; ++j) {
+    line.push_back(fields_[i + j * h_size_]->state_);
+  }
+  std::vector<ChainVal*> val;
+  val.reserve(top_chains_.size());
+  for (auto chain : top_chains_[i]) {
+    val.push_back(&chain->val_);
+  }
+  Finder finder(line, val);
   switch (optimize) {
     case 5:
       finder.FastFind();
@@ -83,7 +112,20 @@ int Crossword::VCalc(unsigned int i, unsigned int optimize) {
       finder.FindResult();
       break;
   }
-  return finder.GetResult();
+  line = finder.GetResult();
+  if (line.size() == 0) {
+    throw std::string("нет решений для столбца ") + std::to_string(i);
+  }
+  for (auto chain : top_chains_[i]) {
+    if (chain->val_.max_pos == chain->val_.min_pos) {
+      chain->setStyleSheet("background-color: #AAFFAA; color: black;");
+    }
+  }
+  bool res = true;
+  for (unsigned int j = 0; j < v_size_; ++j) {
+    res = fields_[i + j * h_size_]->SetVal(line[j]) && res;
+  }
+  return !res;
 }
 
 void ClearLayout(QLayout * layout) {
@@ -91,7 +133,6 @@ void ClearLayout(QLayout * layout) {
     QLayoutItem *item = layout->takeAt(0);
      if (item->widget()) {
        QWidget * widget = item->widget();
-    //   layout->removeWidget(widget);
        delete widget;      
     }
     if (item->layout()) {
@@ -104,7 +145,9 @@ void ClearLayout(QLayout * layout) {
 
 void Crossword::Load() {
  QString fname = QFileDialog::getOpenFileName(nullptr, "Открыть кроссворд", "", "Кроссворды (*.jcs);;Все файлы (*)");
-  if (fname == "") return;
+  if (fname == "") {
+    return;
+  }
   std::ifstream stream(fname.toStdString());
   unsigned int h_size, v_size;
   int color_size, rc, gc, bc;
@@ -114,7 +157,6 @@ void Crossword::Load() {
   setVisible(false);
   if (LoadTopChains(stream) != LoadLeftChains(stream)) {
     QMessageBox::information(nullptr, "Ошибка загрузки", "не совпадает количество закрашенных\nячеек в строках и столбцах.");
-    
   }
   setVisible(true);
 }
@@ -132,7 +174,7 @@ unsigned int Crossword::LoadTopChains(std::ifstream &stream) {
     while (chain_len) {
       size += chain_len;
       Chain *chain = new Chain(chain_len);
-      chain->max_pos_ = v_size_ - chain_len; 
+      chain->val_.max_pos = v_size_ - chain_len; 
       chains.push_back(chain);
       line->addWidget(chain);
       stream >> chain_len;
@@ -156,7 +198,7 @@ unsigned int Crossword::LoadLeftChains(std::ifstream &stream) {
     while (chain_len) {
       size += chain_len;
       Chain *chain = new Chain(chain_len);
-      chain->max_pos_ = h_size_ - chain_len; 
+      chain->val_.max_pos = h_size_ - chain_len; 
       chains.push_back(chain);
       line->addWidget(chain);
       stream >> chain_len;
@@ -167,10 +209,18 @@ unsigned int Crossword::LoadLeftChains(std::ifstream &stream) {
   return size;
 }
 
-bool Crossword::CheckLine(const std::vector<Field*> &line) {
-  for (auto field : line) {
-    if (field->checked_ == false) {
-      return false;
+bool Crossword::CheckLine(unsigned int i, bool orientation) {
+  if (orientation) {
+    for (unsigned int j = 0; j < v_size_; ++j) {
+      if (fields_[i + j * h_size_]->checked_ == false) {
+        return false;
+      }
+    }
+  } else {
+    for (unsigned int j = 0; j < h_size_; ++j) {
+      if (fields_[i * h_size_ + j]->checked_ == false) {
+        return false;
+      }
     }
   }
   return true;
@@ -179,7 +229,7 @@ bool Crossword::CheckLine(const std::vector<Field*> &line) {
 bool Crossword::CheckChains(const std::vector<std::vector<Chain*>> &v_chains) {
   for (auto chains : v_chains) {
     for (auto chain : chains) {
-      if (chain->min_pos_ != chain->max_pos_) {
+      if (chain->val_.min_pos != chain->val_.max_pos) {
         return false;
       }
     }
@@ -189,7 +239,7 @@ bool Crossword::CheckChains(const std::vector<std::vector<Chain*>> &v_chains) {
 
 void Crossword::Run() {
   if (v_size_ == 0 || h_size_ == 0) {
-    QMessageBox::information(nullptr, "результат поиска", "Сначала загрузите кросворд для решения");
+    QMessageBox::information(nullptr, "ошибка:", "Сначала загрузите кросворд для решения");
     return;
   }
   for (unsigned i = 0; i < v_size_; ++i) {
@@ -199,28 +249,19 @@ void Crossword::Run() {
     VCalc(i, 5);
   }
   bool next = true;
-  while (next) {
-    next = false;
-    for (unsigned i = 0; i < v_size_; ++i) {
-      switch (HCalc(i)) {
-        case -1:
-          QMessageBox::information(nullptr, "результат поиска", "Ошибка при решении строки " + QString::number(i));
-          return;
-        case 1:
-          next = true;
-          break;
+  try {
+    while (next) {
+      next = false;
+      for (unsigned i = 0; i < v_size_; ++i) {
+        next = HCalc(i) || next;
+      }
+      for (unsigned i = 0; i < h_size_; ++i) {
+        next = VCalc(i) || next;
       }
     }
-    for (unsigned i = 0; i < h_size_; ++i) {
-      switch (VCalc(i)) {
-        case -1:
-          QMessageBox::information(nullptr, "результат поиска", "Ошибка при решении столбца " + QString::number(i));
-          return;
-        case 1:
-          next = true;
-          break;
-      }
-    }
+  } catch (const std::string& s) {
+    QMessageBox::information(nullptr, "ошибка:", s.c_str());
+    return;
   }
   if (CheckChains(top_chains_) == false || CheckChains(left_chains_) == false) {
     QMessageBox::information(nullptr, "результат поиска:", "Не удалось найти решение:(");

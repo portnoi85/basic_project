@@ -1,11 +1,10 @@
 #include "chain.h"
-#include <iostream>
 
 Chain::Chain(int len, QWidget *parent) 
   : QPushButton (QString::number(len), parent) {
   setFixedSize(15, 15);
   setStyleSheet("background-color: #AAAAAA; color: black;");
-  len_ = len;
+  val_.len = len;
 }
 
 Chain::~Chain() {

@@ -8,6 +8,7 @@ class Field : public QPushButton {
  public:
   Field(QWidget *parent = nullptr);
   ~Field();
+  bool SetVal(int val);
   int state_{0};
   bool checked_{false};
   //для дальнейшей оптимизации:

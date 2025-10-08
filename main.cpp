@@ -1,6 +1,6 @@
-#include "crossword.h"
-
 #include <QApplication>
+
+#include "crossword.h"
 
 int main(int argc, char *argv[])
 {
